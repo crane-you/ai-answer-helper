@@ -16,3 +16,8 @@ desktop.ini
 node_modules/
 # 推送日志
 .push.log
+
+# 打包产物与自检临时目录
+dist/
+.pkg-check/
+.pkg-profile/

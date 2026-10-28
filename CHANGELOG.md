@@ -1,5 +1,14 @@
 # 更新日志
 
+## 1.2.0
+
+- **扩展改名 `ai-answer-helper`**，与 GitHub 仓库一致（商店列表名、工具栏提示同步更新）。
+- 新增打包工具 `tools/build-package.py`：只收运行时文件，产出 `dist/*.zip`。
+- 新增自检脚本 `tools/check-package.sh`：解压后用真实浏览器加载，确认包内容完整。
+- 新增商店素材生成：`tools/make-store-assets.py`（300×300 图标、440×280 / 1400×560 宣传图）、
+  `tools/make-store-screenshots.sh`（1280×800 截图）。
+- 新增 `STORE.md`：Edge 应用商店的上架步骤、权限说明与可直接复制的文案。
+
 ## 1.1.1
 
 安全性加固，来自一次完整隐私审计：

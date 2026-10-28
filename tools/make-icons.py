@@ -70,6 +70,13 @@ def main():
         out.save(path, "PNG")
         print("wrote", path, out.size)
 
+    # 应用商店列表用的 300x300 图标
+    store = os.path.join(os.path.dirname(OUT), "store")
+    os.makedirs(store, exist_ok=True)
+    path = os.path.join(store, "icon-300.png")
+    icon.resize((300, 300), Image.LANCZOS).save(path, "PNG")
+    print("wrote", path)
+
 
 if __name__ == "__main__":
     main()

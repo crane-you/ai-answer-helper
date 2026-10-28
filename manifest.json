@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI 答题助手",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "一键识别当前页面题目，调用 AI 给出答案与解析。支持 DeepSeek / OpenAI / 通义 / Kimi 等任意 OpenAI 兼容接口。",
   "minimum_chrome_version": "102",
   "icons": {

@@ -22,3 +22,4 @@ dist/
 .pkg-check/
 .pkg-profile/
 .release-notes.md
+.pkg.log

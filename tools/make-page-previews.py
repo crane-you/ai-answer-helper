@@ -34,7 +34,9 @@ POPUP_STUB = """
         hasApiKey: true, apiKeyTail: 'a1b2'
       } }),
       openOptionsPage: () => {}
-    }
+    },
+    tabs: { query: async () => [{ url: 'https://example.com/quiz/123' }] },
+    storage: { local: { get: async () => ({ 'aiqa:paused': false, 'aiqa:disabledSites': [] }) } }
   };
 </script>
 """

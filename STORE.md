@@ -21,9 +21,14 @@ bash tools/check-package.sh            # 解压后用真实浏览器加载验证
 
 ## 一、准备工作
 
-1. **Microsoft 账号**（个人号即可），能收验证邮件。
-2. 打开 [Partner Center 仪表盘](https://partner.microsoft.com/dashboard/microsoftedge/overview) → 用同一个账号登录 → 注册为 Edge 扩展开发者（免费）。
-3. 可能需要等十几分钟开通，之后会出现「创建新扩展」按钮。
+1. **Microsoft 个人账号**（Outlook / Live / Hotmail，或用 GitHub 账号登录）。Edge 计划**不支持**用公司/学校账号（Entra ID）注册。
+2. 登录 [Partner Center](https://partner.microsoft.com/dashboard/microsoftedge/public/login)。
+3. **注册 Edge 开发者计划**（免费）：
+   - 打开 [Account settings → Programs](https://partner.microsoft.com/dashboard/account/v3/settings/programs)
+   - 在 **Microsoft Edge** 卡片点 **Get started**
+   - 表单里：国家/地区（注册后不可改）→ 账户类型选 **Individual**（个人，验证最快）→ 发布者显示名填 `ai-answer-helper` → 联系方式 → 勾选接受 App Developer Agreement → **Finish**
+4. 等确认邮件。通过后回到 **Home**，**Workspaces** 区会出现 **Edge** 卡片——**没有这张卡就说明还没注册成功**。
+5. 点 **Edge** 卡片 → **Overview** → **Create new extension**。
 
 ## 二、提交步骤
 

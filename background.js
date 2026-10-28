@@ -323,6 +323,39 @@ async function captureTab(rect, dpr) {
 
 /* ------------------------------ 标签页 ------------------------------ */
 
+const PREF_PAUSED = 'aiqa:paused';
+const PREF_SITES = 'aiqa:disabledSites';
+
+/** 全局暂停或当前站点在黑名单里 → 不响应任何呼出 */
+async function isBlocked(tab) {
+  let st = {};
+  try {
+    st = (await chrome.storage.local.get([PREF_PAUSED, PREF_SITES])) || {};
+  } catch (e) {
+    return false;
+  }
+  if (st[PREF_PAUSED]) return true;
+
+  const sites = Array.isArray(st[PREF_SITES]) ? st[PREF_SITES] : [];
+  let host = '';
+  try { host = new URL(tab && tab.url ? tab.url : '').hostname.toLowerCase(); } catch (e) { return false; }
+  if (!host) return false;
+  return sites.some(function (s) {
+    const r = String(s).toLowerCase();
+    if (!r) return false;
+    return host === r || host.slice(-(r.length + 1)) === '.' + r;
+  });
+}
+
+async function refreshBadge() {
+  try {
+    const st = await chrome.storage.local.get(PREF_PAUSED);
+    const paused = !!(st && st[PREF_PAUSED]);
+    await chrome.action.setBadgeText({ text: paused ? '暂停' : '' });
+    if (paused) await chrome.action.setBadgeBackgroundColor({ color: '#94a3b8' });
+  } catch (e) { /* ignore */ }
+}
+
 async function getActiveTab() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   return tabs && tabs[0];
@@ -345,18 +378,24 @@ async function ensureContent(tabId) {
   }
 }
 
-async function togglePanel(tabId, action) {
+async function togglePanel(tab, action) {
+  if (!tab || tab.id === undefined) return { ok: false, error: '找不到当前标签页。' };
+  if (await isBlocked(tab)) {
+    return { ok: false, error: '扩展已暂停，或已在本站隐藏。到工具栏弹窗里重新打开即可。' };
+  }
+
   const map = { open: 'AIQA_OPEN', toggle: 'AIQA_TOGGLE', shot: 'AIQA_SHOT' };
   const message = { type: map[action] || 'AIQA_OPEN' };
+
   try {
-    await sendToFrame(tabId, message, 0);
+    await sendToFrame(tab.id, message, 0);
     return { ok: true };
   } catch (e) {
-    const injected = await ensureContent(tabId);
+    const injected = await ensureContent(tab.id);
     if (!injected) return { ok: false, error: '当前页面不允许注入脚本（例如浏览器内置页面或应用商店）。' };
     await new Promise((r) => setTimeout(r, 120));
     try {
-      await sendToFrame(tabId, message, 0);
+      await sendToFrame(tab.id, message, 0);
       return { ok: true };
     } catch (e2) {
       return { ok: false, error: '注入失败：' + (e2 && e2.message ? e2.message : e2) };
@@ -392,7 +431,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'OPEN_PANEL' || msg.type === 'TOGGLE_PANEL') {
     const action = msg.action || (msg.type === 'OPEN_PANEL' ? 'open' : 'toggle');
     getActiveTab()
-      .then((tab) => togglePanel(tab.id, action))
+      .then((tab) => togglePanel(tab, action))
       .then(sendResponse)
       .catch((e) => sendResponse({ ok: false, error: String(e && e.message ? e.message : e) }));
     return true;
@@ -573,11 +612,29 @@ chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'toggle-panel') return;
   try {
     const tab = await getActiveTab();
-    if (tab && tab.id !== undefined) await togglePanel(tab.id, 'toggle');
+    if (tab && tab.id !== undefined) await togglePanel(tab, 'toggle');
   } catch (e) {
     // ignore
   }
 });
+
+/* 暂停时在工具栏图标上显示「暂停」角标 */
+
+if (chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes[PREF_PAUSED]) refreshBadge();
+  });
+}
+
+if (chrome.runtime.onStartup) {
+  chrome.runtime.onStartup.addListener(() => { refreshBadge(); });
+}
+
+if (chrome.runtime.onInstalled) {
+  chrome.runtime.onInstalled.addListener(() => { refreshBadge(); });
+}
+
+refreshBadge();
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {

@@ -27,7 +27,7 @@
     const send = (msg) => new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage(msg, (resp) => {
-          void chrome.runtime.lastError;
+          swallowLastError();
           resolve(resp || null);
         });
       } catch (e) { resolve(null); }
@@ -105,6 +105,13 @@
   };
 
   /* ------------------------------ 工具 ------------------------------ */
+
+  /** 安全读取 chrome.runtime.lastError（某些环境没有 chrome.runtime） */
+  function swallowLastError() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime) void chrome.runtime.lastError;
+    } catch (e) { /* ignore */ }
+  }
 
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -385,6 +392,8 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
   font-size: 11px; color: #94a3b8; min-height: 27px;
 }
 .foot .grow { flex: 1; }
+.foot-btn { font-size: 11px; padding: 1px 6px; color: #94a3b8; }
+.foot-btn:hover { color: #dc2626; background: #fff1f1; }
 
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%) translateY(8px);
@@ -472,6 +481,7 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
 
           <footer class="foot">
             <span class="grow" data-role="status"></span>
+            <button class="link-btn foot-btn" data-act="site-off" title="在本网站隐藏悬浮球，可随时恢复">本站隐藏</button>
             <span data-role="shortcut">Alt + Q</span>
           </footer>
         </section>
@@ -960,7 +970,7 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
     try {
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.get('aiqa:fabPos', function (r) {
-          void chrome.runtime.lastError;
+          swallowLastError();
           if (r && r['aiqa:fabPos']) applyFabPosition(r['aiqa:fabPos']);
         });
       }
@@ -1051,6 +1061,10 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
       else if (act === 'copy') copyAnswer();
       else if (act === 'edit') toggleEdit();
       else if (act === 'kind') cycleKind();
+      else if (act === 'site-off') {
+        toast('已在本站隐藏悬浮球');
+        setTimeout(hideOnThisSite, 700);
+      }
       else if (act === 'pick') {
         closePanel();
         if (IS_TOP) {
@@ -1162,6 +1176,121 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
     });
   }
 
+  /* ------------------------------ 开关：全局暂停 / 本站隐藏 ------------------------------ */
+
+  const PREF_PAUSED = 'aiqa:paused';
+  const PREF_SITES = 'aiqa:disabledSites';
+
+  let uiAlive = false;
+
+  function currentHost() {
+    try { return String(location.hostname || '').toLowerCase(); } catch (e) { return ''; }
+  }
+
+  function hostMatches(host, rule) {
+    const r = String(rule || '').toLowerCase();
+    if (!host || !r) return false;
+    return host === r || host.slice(-(r.length + 1)) === '.' + r;
+  }
+
+  function readPrefs(cb) {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+      cb({ paused: false, sites: [] });
+      return;
+    }
+    try {
+      chrome.storage.local.get([PREF_PAUSED, PREF_SITES], function (r) {
+        swallowLastError();
+        cb({
+          paused: !!(r && r[PREF_PAUSED]),
+          sites: (r && Array.isArray(r[PREF_SITES])) ? r[PREF_SITES] : []
+        });
+      });
+    } catch (e) {
+      cb({ paused: false, sites: [] });
+    }
+  }
+
+  function isBlocked(prefs) {
+    if (!prefs) return false;
+    if (prefs.paused) return true;
+    const host = currentHost();
+    if (!host) return false;
+    for (let i = 0; i < prefs.sites.length; i++) {
+      if (hostMatches(host, prefs.sites[i])) return true;
+    }
+    return false;
+  }
+
+  function destroyUI() {
+    if (state.running && state.handle) {
+      try { state.handle.abort(); } catch (e) { /* ignore */ }
+    }
+    state.running = false;
+    state.handle = null;
+    state.open = false;
+    state.answer = '';
+    state.reason = '';
+    state.question = '';
+    state.kind = '';
+    state.snapshot = null;
+
+    try {
+      if (refs.host && refs.host.parentNode) refs.host.parentNode.removeChild(refs.host);
+    } catch (e) { /* ignore */ }
+
+    uiAlive = false;
+    refs.host = null;
+    refs.shadow = null;
+    refs.fab = null;
+    refs.panel = null;
+    refs.answer = null;
+    refs.status = null;
+    refs.toast = null;
+  }
+
+  function applyPrefs(prefs) {
+    const run = function (p) {
+      if (isBlocked(p)) {
+        if (uiAlive) destroyUI();
+        return;
+      }
+      if (!uiAlive) {
+        try {
+          buildUI();
+          uiAlive = true;
+        } catch (e) {
+          uiAlive = false;
+        }
+      }
+    };
+    if (prefs) run(prefs); else readPrefs(run);
+  }
+
+  /** 把当前站点加入黑名单，然后销毁 UI */
+  function hideOnThisSite() {
+    const host = currentHost();
+    if (!host || typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+      destroyUI();
+      return;
+    }
+    try {
+      chrome.storage.local.get(PREF_SITES, function (r) {
+        swallowLastError();
+        const list = (r && Array.isArray(r[PREF_SITES])) ? r[PREF_SITES].slice() : [];
+        if (!list.some(function (s) { return hostMatches(host, s) || String(s).toLowerCase() === host; })) {
+          list.push(host);
+        }
+        chrome.storage.local.set({ [PREF_SITES]: list }, function () {
+          swallowLastError();
+          destroyUI();
+        });
+      });
+    } catch (e) {
+      destroyUI();
+    }
+  }
+
   /* ------------------------------ 启动 ------------------------------ */
 
   function boot() {
@@ -1169,8 +1298,19 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
       window.addEventListener('DOMContentLoaded', boot, { once: true });
       return;
     }
-    if (IS_TOP) {
-      try { buildUI(); } catch (e) { /* ignore */ }
+    if (!IS_TOP) return;
+
+    readPrefs(function (prefs) {
+      applyPrefs(prefs);
+    });
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      try {
+        chrome.storage.onChanged.addListener(function (changes, area) {
+          if (area !== 'local') return;
+          if (changes[PREF_PAUSED] || changes[PREF_SITES]) applyPrefs();
+        });
+      } catch (e) { /* ignore */ }
     }
   }
 

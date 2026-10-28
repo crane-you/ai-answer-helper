@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>PAUSE-RUNNING</title>
+<style>
+  body { font: 14px/1.7 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; margin: 20px; color: #111; }
+  pre { background: #0f172a; color: #d7e3f4; padding: 12px; border-radius: 8px; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1 style="font-size:15px">开关自测：暂停 / 本站隐藏</h1>
+<p id="case">case: none</p>
+<pre id="log">running…</pre>
+
+<script>
+  // 用参数模拟不同的存储状态：?case=none | paused | site
+  const params = new URLSearchParams(location.search);
+  const CASE = params.get('case') || 'none';
+  const host = location.hostname.toLowerCase();
+  const state = {
+    'aiqa:paused': CASE === 'paused',
+    'aiqa:disabledSites': CASE === 'site' ? [host] : []
+  };
+  document.getElementById('case').textContent = 'case: ' + CASE + '  host: ' + host;
+
+  try {
+    window.chrome = window.chrome || {};
+    window.chrome.storage = {
+      local: {
+        get: function (keys, cb) { cb(Object.assign({}, state)); },
+        set: function (obj, cb) { Object.assign(state, obj); if (cb) cb(); }
+      },
+      onChanged: { addListener: function () {} }
+    };
+  } catch (e) {
+    document.title = 'STUB-FAIL';
+    document.getElementById('log').textContent = '无法注入 chrome.storage 桩: ' + e.message;
+  }
+</script>
+
+<script src="../lib/extract.js"></script>
+<script src="../content/content.js"></script>
+
+<script>
+  setTimeout(function () {
+    const host = document.getElementById('aiqa-shadow-host');
+    const hasFab = !!(host && host.shadowRoot && host.shadowRoot.querySelector('.fab'));
+    const expectVisible = (CASE === 'none');
+    const ok = hasFab === expectVisible;
+
+    document.getElementById('log').textContent =
+      'CASE=' + CASE + '\n' +
+      '悬浮球存在=' + hasFab + '（期望 ' + expectVisible + '）\n' +
+      (ok ? 'RESULT PASS' : 'RESULT FAIL');
+    document.title = ok ? 'PAUSE-PASS' : 'PAUSE-FAIL';
+  }, 600);
+</script>
+</body>
+</html>

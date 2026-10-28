@@ -79,7 +79,12 @@ const chrome = {
       get: async () => ({ ...state.settings }),
       set: async () => {},
       remove: async () => {}
-    }
+    },
+    onChanged: { addListener: () => {} }
+  },
+  action: {
+    setBadgeText: async () => {},
+    setBadgeBackgroundColor: async () => {}
   },
   runtime: {
     id: 'test-ext',
@@ -87,6 +92,7 @@ const chrome = {
     onMessage: { addListener: (f) => listeners.message.push(f) },
     onConnect: { addListener: (f) => listeners.connect.push(f) },
     onInstalled: { addListener: (f) => listeners.installed.push(f) },
+    onStartup: { addListener: () => {} },
     openOptionsPage: () => {}
   },
   commands: { onCommand: { addListener: (f) => listeners.command.push(f) } },
@@ -257,6 +263,22 @@ check('buildMessages 无图片时是纯文本',
 check('题目被【题目开始/结束】包住（防提示词注入）',
   noImage[1].content.includes('【题目开始】') && noImage[1].content.includes('【题目结束】'));
 check('系统提示词声明页面文字只当素材', DEFAULT_PROMPT_CHECK);
+
+/* ------------------------- 9. 暂停开关 ------------------------- */
+
+const BASE_SETTINGS = { baseUrl: 'http://127.0.0.1:' + PORT + '/v1', apiKey: 'sk-test', model: 'm' };
+
+state.settings = { ...BASE_SETTINGS, 'aiqa:paused': true };
+const pausedResp = await sendMessage({ type: 'OPEN_PANEL' });
+check('暂停时拒绝呼出面板', pausedResp && pausedResp.ok === false, JSON.stringify(pausedResp));
+
+state.settings = { ...BASE_SETTINGS, 'aiqa:disabledSites': ['example.com'] };
+const otherSite = await sendMessage({ type: 'OPEN_PANEL' });
+check('未命中黑名单站点时正常打开', otherSite && otherSite.ok === true, JSON.stringify(otherSite));
+
+state.settings = { ...BASE_SETTINGS };
+const normalOpen = await sendMessage({ type: 'OPEN_PANEL' });
+check('正常状态可以打开面板', normalOpen && normalOpen.ok === true, JSON.stringify(normalOpen));
 
 server.close();
 server.closeAllConnections?.();

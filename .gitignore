@@ -1,0 +1,16 @@
+# 测试与截图脚本产生的临时文件
+.edge-*
+.dump.html
+.last-test.txt
+demo/preview.png
+test/*.png
+test/options-preview.html
+test/popup-preview.html
+
+# 系统垃圾文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 依赖
+node_modules/

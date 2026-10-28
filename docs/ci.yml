@@ -1,0 +1,33 @@
+# GitHub Actions 配置：复制到 .github/workflows/ci.yml 即可启用。
+# 注意：推送 workflow 文件要求 gh/token 具备 workflow 权限（gh auth refresh -s workflow）。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: 清单校验与后台逻辑测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 校验 manifest
+        run: |
+          node -e "const m=require('./manifest.json'); if (m.manifest_version!==3) throw new Error('需要 Manifest V3'); console.log('manifest ok:', m.name, m.version);"
+
+      - name: JS 语法检查
+        run: |
+          for f in background.js lib/extract.js content/content.js popup/popup.js options/options.js; do
+            node --check "$f"
+          done
+
+      - name: 后台逻辑测试
+        run: node test/background-test.mjs

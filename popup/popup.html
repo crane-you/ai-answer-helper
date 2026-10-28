@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>AI 答题助手</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      width: 306px; margin: 0; padding: 14px 14px 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 13px; color: #0f172a; background: #fff; line-height: 1.55;
+    }
+    .head { display: flex; align-items: center; gap: 10px; margin-bottom: 13px; }
+    .logo {
+      width: 32px; height: 32px; border-radius: 10px; flex: none;
+      background: linear-gradient(135deg, #4f7cff, #a855f7);
+      color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(79,124,255,.3);
+    }
+    .title { font-size: 14px; font-weight: 650; letter-spacing: .2px; }
+    .sub { font-size: 11.5px; color: #64748b; margin-top: 1px; }
+    .sub b { color: #4f7cff; font-weight: 600; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    button {
+      font-family: inherit; font-size: 12.5px; cursor: pointer; border-radius: 9px;
+      border: 1px solid #e2e8f2; background: #fff; color: #334155; height: 34px;
+      transition: background .12s, border-color .12s;
+    }
+    button:hover { background: #f8fafc; border-color: #d3dcea; }
+    button.primary {
+      grid-column: 1 / -1; height: 38px; color: #fff; border: none; font-weight: 600; font-size: 13px;
+      background: linear-gradient(135deg, #4f7cff, #7c5cff);
+      box-shadow: 0 4px 12px rgba(79,124,255,.3);
+    }
+    button.primary:hover { background: linear-gradient(135deg, #416ef0, #6f4ff0); }
+    .hint {
+      margin-top: 11px; padding: 8px 10px; border-radius: 9px; font-size: 11.5px;
+      background: #f7f9fc; color: #64748b; border: 1px solid #eef2f7; line-height: 1.55;
+    }
+    .hint.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .hint.ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+    .foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 10px; padding-top: 8px; border-top: 1px solid #f1f5f9;
+      font-size: 11px; color: #94a3b8;
+    }
+    .link {
+      border: none; background: none; color: #4f7cff; padding: 2px 4px; height: auto;
+      font-size: 11.5px; border-radius: 5px;
+    }
+    .link:hover { background: #eef3ff; }
+    kbd {
+      font-family: ui-monospace, Consolas, monospace; font-size: 10px;
+      background: #f1f5f9; border: 1px solid #e2e8f2; border-bottom-width: 2px;
+      border-radius: 4px; padding: 0 4px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #16181d; color: #e8ecf3; }
+      button { background: #1d2027; border-color: #2c3039; color: #cfd6e2; }
+      button:hover { background: #23272f; }
+      .hint { background: #14161b; border-color: #23262d; color: #98a2b3; }
+      .hint.ok { background: rgba(22, 101, 52, .16); border-color: #14532d; color: #86efac; }
+      .hint.warn { background: rgba(120, 53, 15, .2); border-color: #78350f; color: #fcd34d; }
+      .foot { border-top-color: #23262d; }
+      kbd { background: #23272f; border-color: #2c3039; }
+    }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <div class="logo">✦</div>
+    <div>
+      <div class="title">AI 答题助手</div>
+      <div class="sub" id="status">正在读取配置…</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="open" class="primary">打开答题面板</button>
+    <button id="shot">截图问 AI</button>
+    <button id="opt">设置</button>
+  </div>
+
+  <div class="hint" id="hint">在题目页面按 <kbd>Alt</kbd> + <kbd>Q</kbd>，或点页面右下角的悬浮球。</div>
+
+  <div class="foot">
+    <span id="tail"></span>
+    <button class="link" id="opt2">配置 API →</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

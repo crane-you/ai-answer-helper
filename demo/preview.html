@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AI 答题助手 · 界面预览</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font: 14px/1.7 -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: #1f2937; background: #f4f6fb;
+    background-image: radial-gradient(900px 420px at 22% -8%, #e4ecff 0%, transparent 70%),
+                      radial-gradient(760px 380px at 92% 4%, #f3e9ff 0%, transparent 68%);
+  }
+  .topbar {
+    height: 52px; display: flex; align-items: center; gap: 22px; padding: 0 26px;
+    background: #fff; border-bottom: 1px solid #e8edf5; color: #64748b; font-size: 13px;
+  }
+  .topbar .logo { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg,#4f7cff,#a855f7); }
+  .topbar b { color: #1f2937; }
+  .layout { display: grid; grid-template-columns: 190px minmax(0, 1fr) 190px; gap: 18px; padding: 22px 26px 40px; max-width: 1180px; margin: 0 auto; }
+  .side { background: #fff; border: 1px solid #e8edf5; border-radius: 12px; padding: 14px; font-size: 12.5px; color: #7b8798; height: fit-content; }
+  .side div { padding: 6px 8px; border-radius: 7px; }
+  .side div.on { background: #eef3ff; color: #4f7cff; font-weight: 600; }
+  .card { background: #fff; border: 1px solid #e8edf5; border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 2px rgba(16,24,40,.03); }
+  .meta { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; color: #94a3b8; font-size: 12px; }
+  .pill { background: #eef3ff; color: #4f7cff; padding: 1px 9px; border-radius: 999px; font-weight: 600; font-size: 11.5px; }
+  h1 { font-size: 15px; margin: 0 0 14px; line-height: 1.75; font-weight: 600; }
+  ol.opts { list-style: none; margin: 0; padding: 0; }
+  ol.opts li { padding: 9px 12px; border: 1px solid #edf1f7; border-radius: 10px; margin-bottom: 8px; font-size: 13.5px; color: #374151; }
+  ol.opts li span { color: #94a3b8; margin-right: 8px; font-weight: 600; }
+  .ad { background: #fff; border: 1px dashed #e2e8f2; border-radius: 12px; padding: 18px 14px; text-align: center; color: #b6c0cd; font-size: 12px; height: fit-content; }
+  .foot { text-align: center; color: #a8b3c2; font-size: 12px; padding-bottom: 26px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="logo"></span><b>在线练习</b><span>题库</span><span>错题本</span><span>我的</span>
+    <span style="margin-left:auto">登录 / 注册</span>
+  </div>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="on">第一章 细胞代谢</div>
+      <div>第二章 遗传规律</div>
+      <div>第三章 稳态与调节</div>
+      <div>第四章 生物与环境</div>
+    </aside>
+
+    <main class="card">
+      <div class="meta"><span class="pill">单选题</span><span>第 1 题 / 共 20 题</span><span>来源：2024 模拟卷</span></div>
+      <h1>1. 下列关于细胞呼吸的叙述，正确的是（）</h1>
+      <ol class="opts">
+        <li><span>A.</span>有氧呼吸产生二氧化碳的场所是细胞质基质</li>
+        <li><span>B.</span>无氧呼吸的第二阶段产生少量 ATP</li>
+        <li><span>C.</span>有氧呼吸的第三阶段产生大量 ATP</li>
+        <li><span>D.</span>无氧呼吸的产物都是乳酸</li>
+      </ol>
+      <div class="meta" style="margin-top:16px;margin-bottom:0">上一题 · 下一题 · 提交 · 收藏</div>
+    </main>
+
+    <aside class="ad">广告位招租</aside>
+  </div>
+
+  <div class="foot">© 2024 在线练习 版权所有</div>
+
+  <script>
+    // 演示后端：不连网络，模拟一次流式回答，用来预览面板效果
+    const ANSWER = [
+      '【题型】单选题',
+      '【答案】C',
+      '【解析】有氧呼吸第三阶段在线粒体内膜上进行，前两阶段产生的 [H] 在此与氧气结合生成水，释放大量能量并合成大量 ATP。',
+      '【选项分析】',
+      'A. 错误：有氧呼吸产生 CO₂ 的场所是线粒体基质（第二阶段），不是细胞质基质。',
+      'B. 错误：无氧呼吸第二阶段不产生 ATP，只有第一阶段产生少量 ATP。',
+      'C. 正确：第三阶段在线粒体内膜上完成，释放能量最多。',
+      'D. 错误：无氧呼吸的产物是乳酸，或酒精和 CO₂，并非都是乳酸。'
+    ].join('\n');
+
+    window.__AIQA_DEMO__ = {
+      name: 'demo',
+      getSettings: function () {
+        return Promise.resolve({
+          baseUrl: 'https://api.deepseek.com/v1',
+          model: 'deepseek-chat',
+          visionModel: '',
+          hasApiKey: true,
+          apiKeyTail: 'demo',
+          temperature: 0.2,
+          maxTokens: 1600
+        });
+      },
+      extract: function () {
+        return Promise.resolve({ ok: true, snapshot: window.AIQAExtract.snapshot(), frameId: 0 });
+      },
+      capture: function () { return Promise.resolve({ ok: false, error: '预览模式不支持截图' }); },
+      openOptions: function () { alert('预览模式：真实扩展里这里会打开设置页'); },
+      startPick: function () {}, stopPick: function () {}, relayPick: function () {},
+      ask: function (payload, h) {
+        let i = 0;
+        let stopped = false;
+        if (h.onStart) h.onStart({ model: 'deepseek-chat' });
+        const timer = setInterval(function () {
+          if (stopped) return;
+          if (i >= ANSWER.length) {
+            clearInterval(timer);
+            h.onDone({ text: ANSWER, elapsed: 1180, model: 'deepseek-chat' });
+            return;
+          }
+          const step = 2 + Math.floor(Math.random() * 7);
+          h.onDelta(ANSWER.slice(i, i + step));
+          i += step;
+        }, 22);
+        return {
+          abort: function () {
+            stopped = true;
+            clearInterval(timer);
+            if (h.onAbort) h.onAbort({});
+          }
+        };
+      }
+    };
+  </script>
+  <script src="../lib/extract.js"></script>
+  <script src="../content/content.js"></script>
+  <script>
+    // ?auto=1 时自动打开面板并开始作答，方便截图 / 演示
+    if (location.search.indexOf('auto=1') >= 0) {
+      (function waitHost(n) {
+        const host = document.getElementById('aiqa-shadow-host');
+        if (!host || !host.shadowRoot) {
+          if (n > 60) return;
+          return setTimeout(function () { waitHost(n + 1); }, 50);
+        }
+        const sr = host.shadowRoot;
+        sr.querySelector('.fab').click();
+        setTimeout(function () {
+          const btn = sr.querySelector('[data-act="ask"]');
+          if (btn) btn.click();
+        }, 420);
+      })(0);
+    }
+  </script>
+</body>
+</html>

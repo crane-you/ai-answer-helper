@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>题目识别自测</title>
+<style>
+  body { font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; margin: 16px; color: #111; }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  .row { border: 1px solid #dbe3ee; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; }
+  .row h2 { font-size: 13px; margin: 0 0 6px; color: #334155; }
+  iframe { width: 640px; height: 230px; border: 1px solid #eee; border-radius: 6px; background: #fff; }
+  pre#out { background: #f8fafc; border: 1px solid #e5ebf3; border-radius: 8px; padding: 10px; font-size: 12px; white-space: pre-wrap; }
+  .ok { color: #15803d; } .bad { color: #b91c1c; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>AI 答题助手 · 题目识别自测</h1>
+<div id="rows"></div>
+<pre id="out">running…</pre>
+
+<script src="../lib/extract.js"></script>
+<script>
+const FIXTURES = [
+  {
+    name: '1. 标准单选题（ul 选项）',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px;color:#222}
+      .topbar{color:#888;margin-bottom:10px}.footer{margin-top:14px;color:#aaa}
+      li{padding:2px 0}</style>
+      <div class="topbar">首页 · 课程 · 登录 · 注册</div>
+      <div class="wrap">
+        <div class="question">
+          <p>1. 下列关于细胞呼吸的叙述，正确的是（ ）</p>
+          <ul class="options">
+            <li>A. 有氧呼吸产生二氧化碳的场所是细胞质基质</li>
+            <li>B. 无氧呼吸的第二阶段产生少量 ATP</li>
+            <li>C. 有氧呼吸的第三阶段产生大量 ATP</li>
+            <li>D. 无氧呼吸的产物都是乳酸</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer">版权 · 客服 · 广告</div>`,
+    must: ['细胞呼吸', 'A.', 'D.', '第三阶段'],
+    mustNot: ['版权'],
+    kind: '单选题'
+  },
+  {
+    name: '2. 学习通式（questionLi + A、）',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px;color:#222}
+      .questionLi{border:1px solid #eee;padding:10px}.Zy_TItle{font-weight:600;margin-bottom:6px}
+      .answerBg{list-style:none;padding:3px 0}.answerBtn{color:#888;margin-top:8px}</style>
+      <div class="questionLi">
+        <div class="Zy_TItle"><span>2.</span> 下列关于牛顿第一定律的说法，正确的是</div>
+        <ul>
+          <li class="clearfix answerBg"><span>A、</span><div class="answer_p">物体不受力时一定静止</div></li>
+          <li class="clearfix answerBg"><span>B、</span><div class="answer_p">力是维持物体运动的原因</div></li>
+          <li class="clearfix answerBg"><span>C、</span><div class="answer_p">力是改变物体运动状态的原因</div></li>
+          <li class="clearfix answerBg"><span>D、</span><div class="answer_p">物体运动需要力来维持</div></li>
+        </ul>
+        <div class="answerBtn">提交 · 上一题 · 下一题</div>
+      </div>`,
+    must: ['牛顿第一定律', 'C、', '物体运动需要力'],
+    mustNot: ['提交'],
+    kind: '单选题'
+  },
+  {
+    name: '3. br 换行选项',
+    html: `<style>body{font:15px/1.9 sans-serif;margin:12px}</style>
+      <div id="t3">
+        3、以下哪些属于可再生能源？<br>
+        A. 煤炭<br>
+        B. 太阳能<br>
+        C. 风能<br>
+        D. 石油
+      </div>`,
+    must: ['可再生能源', 'B. 太阳能', 'C. 风能'],
+    mustNot: []
+  },
+  {
+    name: '4. 填空题',
+    html: `<style>body{font:14px/1.8 sans-serif;margin:12px}h1{font-size:16px}</style>
+      <article>
+        <h1>随堂练习</h1>
+        <p>4. 绿色植物进行光合作用的场所是______，释放的气体是______。</p>
+        <p>提示：回忆叶绿体的结构。</p>
+      </article>`,
+    must: ['光合作用', '叶绿体'],
+    mustNot: []
+  },
+  {
+    name: '5. 表格题',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px}table{border-collapse:collapse}
+      td{border:1px solid #ddd;padding:6px}</style>
+      <table class="exam-table">
+        <tr><td>5. 已知某商品原价 200 元，打八折后售价是多少元？______</td></tr>
+      </table>`,
+    must: ['200', '八折'],
+    mustNot: []
+  },
+  {
+    name: '6. 普通文章页（不应崩溃）',
+    html: `<style>body{font:14px/1.8 sans-serif;margin:12px;max-width:560px}</style>
+      <h1>秋天的怀念</h1>
+      <p>那天我又独自坐在屋里，看着窗外的树叶“唰唰啦啦”地飘落。</p>
+      <p>母亲进来了，挡在窗前：“北海的菊花开了，我推着你去看看吧。”</p>`,
+    must: ['秋天', '菊花'],
+    mustNot: []
+  },
+  {
+    name: '7. 多选题（复选框 + 题型标签行）',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px;color:#222}
+      .qtype{display:inline-block;background:#eef3ff;color:#4f7cff;border-radius:99px;
+        padding:0 8px;font-size:12px;margin-bottom:6px}
+      ul{list-style:none;margin:0;padding:0}li{padding:3px 0}</style>
+      <div class="question">
+        <span class="qtype">多选题</span>
+        <p>7. 下列哪些属于可再生能源？</p>
+        <ul>
+          <li><label><input type="checkbox"> A. 太阳能</label></li>
+          <li><label><input type="checkbox"> B. 煤炭</label></li>
+          <li><label><input type="checkbox"> C. 风能</label></li>
+          <li><label><input type="checkbox"> D. 石油</label></li>
+        </ul>
+      </div>`,
+    must: ['可再生能源', '太阳能', '风能'],
+    mustNot: [],
+    kind: '多选题'
+  },
+  {
+    name: '8. 多选题（题干里写「多选」，无控件）',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px;color:#222}
+      ol{margin:6px 0 0;padding-left:20px}li{padding:2px 0}</style>
+      <div class="item">
+        <p>8. 下列关于细胞结构的叙述，正确的有（多选）</p>
+        <ol>
+          <li>A. 线粒体是双层膜结构</li>
+          <li>B. 核糖体参与蛋白质合成</li>
+          <li>C. 叶绿体只存在于植物细胞</li>
+          <li>D. 中心体存在于所有细胞</li>
+        </ol>
+      </div>`,
+    must: ['细胞结构', '线粒体', '中心体'],
+    mustNot: [],
+    kind: '多选题'
+  },
+  {
+    name: '9. 判断题（单选框 + 判断：题干）',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px;color:#222}
+      label{display:block;padding:3px 0}</style>
+      <div class="judge">
+        <p>9. 判断：物体运动状态改变一定受到力的作用。</p>
+        <label><input type="radio" name="j9"> 正确</label>
+        <label><input type="radio" name="j9"> 错误</label>
+      </div>`,
+    must: ['物体运动状态', '正确', '错误'],
+    mustNot: [],
+    kind: '判断题'
+  },
+  {
+    name: '10. 题型只写在小节标题（二、多选题）',
+    html: `<style>body{font:14px/1.7 sans-serif;margin:12px;color:#222}
+      .section{font-size:14px;color:#4f7cff;margin:0 0 8px}
+      ul{list-style:none;margin:6px 0 0;padding:0}li{padding:2px 0}</style>
+      <div class="paper">
+        <h3 class="section">二、多选题（每题 2 分）</h3>
+        <div class="item">
+          <p>10. 下列属于可再生能源的有（ ）</p>
+          <ul>
+            <li>A. 太阳能</li>
+            <li>B. 煤炭</li>
+            <li>C. 风能</li>
+            <li>D. 石油</li>
+          </ul>
+        </div>
+      </div>`,
+    must: ['可再生能源', '太阳能', '风能'],
+    mustNot: [],
+    kind: '多选题'
+  }
+];
+
+const rows = document.getElementById('rows');
+const results = [];
+const frames = [];
+
+FIXTURES.forEach(function (fx, i) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  const h = document.createElement('h2');
+  h.textContent = fx.name;
+  const ifr = document.createElement('iframe');
+  ifr.srcdoc = fx.html;
+  row.appendChild(h);
+  row.appendChild(ifr);
+  rows.appendChild(row);
+  frames.push(ifr);
+});
+
+function line(t) {
+  const p = document.createElement('div');
+  p.textContent = t;
+  document.getElementById('out').appendChild(p);
+}
+
+window.addEventListener('load', function () {
+  setTimeout(run, 300);
+});
+
+function run() {
+  const out = document.getElementById('out');
+  out.textContent = '';
+  let pass = 0;
+  let total = 0;
+
+  FIXTURES.forEach(function (fx, i) {
+    const frame = frames[i];
+    const win = frame.contentWindow;
+    let snap = null;
+    let err = '';
+    try {
+      const ex = window.AIQAExtract.createExtractor(win);
+      snap = ex.snapshot();
+    } catch (e) { err = String(e && e.message ? e.message : e); }
+
+    const problems = [];
+    if (err) problems.push('异常: ' + err);
+    if (!snap || !snap.ok) problems.push('未识别到文本');
+    if (snap) {
+      (fx.must || []).forEach(function (m) {
+        if (snap.text.indexOf(m) < 0) problems.push('缺少「' + m + '」');
+      });
+      (fx.mustNot || []).forEach(function (m) {
+        if (snap.text.indexOf(m) >= 0) problems.push('混入了「' + m + '」');
+      });
+      if (fx.kind && snap.kind !== fx.kind) problems.push('题型=' + snap.kind + '，期望 ' + fx.kind);
+    }
+
+    total++;
+    const ok = problems.length === 0;
+    if (ok) pass++;
+
+    line((ok ? 'PASS ' : 'FAIL ') + fx.name + (ok ? '' : '  ← ' + problems.join('；')));
+    line('      score=' + (snap ? snap.score : '-') + '  kind=' + (snap ? snap.kind : '-') +
+      '  tag=' + (snap ? snap.tag : '-'));
+    line('      text=' + JSON.stringify(snap ? String(snap.text).slice(0, 180) : ''));
+  });
+
+  // 手动框选：选中题干段落应带出选项
+  total++;
+  try {
+    const win = frames[0].contentWindow;
+    const p = win.document.querySelector('.question p');
+    const picked = window.AIQAExtract.createExtractor(win).extractElement(p);
+    const ok = picked.ok && picked.text.indexOf('A.') >= 0 && picked.text.indexOf('细胞呼吸') >= 0;
+    if (ok) pass++;
+    else line('FAIL 7. 手动框选题干未带出选项: ' + JSON.stringify(picked.text));
+    if (ok) line('PASS 7. 手动框选题干带出选项');
+  } catch (e) {
+    line('FAIL 7. 手动框选异常: ' + e.message);
+  }
+
+  line('');
+  line('RESULT ' + pass + '/' + total);
+  document.title = 'DONE ' + pass + '/' + total;
+  document.body.setAttribute('data-result', pass + '/' + total);
+}
+</script>
+</body>
+</html>

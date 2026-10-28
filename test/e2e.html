@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>E2E-RUNNING</title>
+<style>
+  body { margin: 0; padding: 24px; font: 14px/1.7 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #f6f8fc; color: #1f2937; }
+  h1 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+  p.sub { color: #7b8798; font-size: 12.5px; margin: 0 0 16px; }
+  iframe { width: 660px; height: 330px; border: 1px solid #e4eaf3; border-radius: 10px; background: #fff; }
+  pre { background: #0f172a; color: #d7e3f4; border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.7; max-width: 700px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <h1>端到端测试：多选题放在 iframe 里</h1>
+  <p class="sub">扩展加载后自动点开悬浮球，面板应识别为「多选题」并带出全部选项。</p>
+  <iframe id="q"></iframe>
+  <pre id="log">waiting…</pre>
+
+  <script>
+    document.getElementById('q').srcdoc = `
+      <base target="_self">
+      <style>
+        body { margin: 0; padding: 14px; font: 14px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; color: #222; }
+        .topbar { color: #98a2b3; font-size: 12px; margin-bottom: 10px; }
+        .question { border: 1px solid #eef2f7; border-radius: 10px; padding: 12px 14px; }
+        .qtype { display: inline-block; background: #eef3ff; color: #4f7cff; border-radius: 99px; padding: 0 9px; font-size: 12px; margin-bottom: 6px; }
+        .stem { font-weight: 600; margin-bottom: 8px; }
+        ul { list-style: none; margin: 0; padding: 0; }
+        li { padding: 5px 0; }
+        .bar { color: #98a2b3; font-size: 12px; margin-top: 10px; }
+      </style>
+      <div class="topbar">题库 · 错题本 · 登录</div>
+      <div class="question">
+        <span class="qtype">多选题</span>
+        <div class="stem">12. 一定质量的理想气体在等温膨胀过程中，下列说法正确的有（ ）</div>
+        <ul>
+          <li><label><input type="checkbox"> A. 气体对外做功</label></li>
+          <li><label><input type="checkbox"> B. 气体温度保持不变</label></li>
+          <li><label><input type="checkbox"> C. 气体的内能不变</label></li>
+          <li><label><input type="checkbox"> D. 气体向外界放热</label></li>
+        </ul>
+        <div class="bar">上一题 · 下一题 · 提交</div>
+      </div>
+      <div class="topbar" style="margin-top:12px">© 在线题库</div>
+    `;
+
+    const log = (t) => {
+      const el = document.getElementById('log');
+      el.textContent = (el.textContent === 'waiting…' ? '' : el.textContent + '\n') + t;
+    };
+
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries++;
+      const host = document.getElementById('aiqa-shadow-host');
+      if (!host || !host.shadowRoot) {
+        if (tries > 60) {
+          clearInterval(timer);
+          log('FAIL: 没找到悬浮球 —— 内容脚本未注入');
+          document.title = 'E2E-FAIL';
+        }
+        return;
+      }
+      clearInterval(timer);
+      const sr = host.shadowRoot;
+      log('OK: 悬浮球已注入 @' + (tries * 100) + 'ms');
+      sr.querySelector('.fab').click();
+
+      setTimeout(() => {
+        const panel = sr.querySelector('.panel');
+        const tag = sr.querySelector('[data-role="kind"]');
+        const qtext = sr.querySelector('[data-role="qtext"]').textContent.trim();
+        const model = sr.querySelector('[data-role="model"]').textContent.trim();
+        const answer = sr.querySelector('[data-role="answer"]').textContent.replace(/\s+/g, ' ').trim();
+        const status = sr.querySelector('[data-role="status"]').textContent.trim();
+
+        log('PANEL_OPEN=' + (!panel.hidden));
+        log('KIND=' + tag.textContent.trim());
+        log('QTEXT=' + JSON.stringify(qtext.slice(0, 160)));
+        log('MODEL=' + model);
+        log('STATUS=' + status);
+        log('ANSWER_AREA=' + JSON.stringify(answer.slice(0, 80)));
+        log('HAS_OPTIONS=' + (qtext.indexOf('A.') >= 0 && qtext.indexOf('D.') >= 0));
+        log('NO_NOISE=' + (qtext.indexOf('上一题') < 0 && qtext.indexOf('题库') < 0));
+
+        // 手动切换题型：验证标签可点，且循环正确
+        if (location.search.indexOf('clicktest=1') >= 0) {
+          tag.click();
+          log('AFTER_CLICK=' + tag.textContent.trim());
+          tag.click();
+          log('AFTER_CLICK2=' + tag.textContent.trim());
+        }
+
+        document.title = 'E2E-DONE';
+      }, 1500);
+    }, 100);
+  </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>AI 答题助手 · 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="logo">✦</div>
+      <div>
+        <h1>AI 答题助手</h1>
+        <p>识别网页上的题目，调用大模型给出答案。设置只保存在本机浏览器里。</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>选择服务商</h2>
+      <p class="desc">点一下自动填好接口地址和模型，再补上你自己的 API Key 即可。只要是 OpenAI 兼容接口（<code>/v1/chat/completions</code>）都能用。</p>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="card">
+      <h2>接口配置</h2>
+
+      <label class="field">
+        <span class="label">接口地址 Base URL</span>
+        <input id="baseUrl" type="text" spellcheck="false" placeholder="https://api.deepseek.com/v1">
+        <span class="tip">一般以 <code>/v1</code> 结尾，不用写 <code>/chat/completions</code>。</span>
+      </label>
+
+      <label class="field">
+        <span class="label">API Key</span>
+        <div class="input-row">
+          <input id="apiKey" type="password" spellcheck="false" autocomplete="off" placeholder="sk-...">
+          <button type="button" class="mini" id="toggleKey">显示</button>
+          <button type="button" class="mini" id="clearKey">清除</button>
+        </div>
+        <span class="tip">只存在 <code>chrome.storage.local</code>，不会上传到除你填写的接口以外的任何地方。</span>
+      </label>
+
+      <div class="grid2">
+        <label class="field">
+          <span class="label">模型名称</span>
+          <input id="model" type="text" spellcheck="false" placeholder="deepseek-chat">
+        </label>
+        <label class="field">
+          <span class="label">视觉模型（可选）</span>
+          <input id="visionModel" type="text" spellcheck="false" placeholder="留空则用上面的模型">
+          <span class="tip">「截图问 AI」用的多模态模型。</span>
+        </label>
+      </div>
+
+      <div class="grid2">
+        <label class="field">
+          <span class="label">温度 <b id="tempVal">0.2</b></span>
+          <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.2">
+          <span class="tip">解题建议 0～0.3，越低越稳定。</span>
+        </label>
+        <label class="field">
+          <span class="label">最大输出 tokens</span>
+          <input id="maxTokens" type="number" min="256" max="8192" step="128" value="1600">
+          <span class="tip">答案较长（计算题/解析）时可调大。</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary><h2>提示词（高级）</h2></summary>
+        <p class="desc">控制模型的答题风格与输出格式。改坏了可点「恢复默认」。</p>
+        <textarea id="systemPrompt" rows="12" spellcheck="false"></textarea>
+        <div class="row-end">
+          <button type="button" class="mini" id="resetPrompt">恢复默认提示词</button>
+        </div>
+      </details>
+    </section>
+
+    <div class="savebar">
+      <div class="status" id="status"></div>
+      <button type="button" class="btn" id="test">测试连接</button>
+      <button type="button" class="btn primary" id="save">保存设置</button>
+    </div>
+
+    <footer class="foot">
+      <span>快捷键 <kbd>Alt</kbd>+<kbd>Q</kbd> 呼出面板 · 使用说明见扩展目录里的 README.md</span>
+    </footer>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

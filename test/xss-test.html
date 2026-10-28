@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>XSS-RUNNING</title>
+<style>body{font:14px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;margin:20px;color:#111}
+pre{background:#0f172a;color:#d7e3f4;padding:12px;border-radius:8px;font-size:12px}</style>
+</head>
+<body>
+<h1 style="font-size:15px">回答渲染的 XSS 安全性自测</h1>
+<p>模拟模型返回恶意 HTML / 脚本，检查面板是否只是把它们当纯文本显示。</p>
+<div id="q" style="border:1px solid #ddd;border-radius:8px;padding:10px;max-width:560px">
+  1. 下列哪个选项正确？<br>A. 甲<br>B. 乙<br>C. 丙<br>D. 丁
+</div>
+<pre id="log">running…</pre>
+
+<script>
+  // 恶意“模型回答”：各种注入手法
+  const PAYLOAD = [
+    '<img src=x onerror="window.__XSS__=1">',
+    '<script>window.__XSS__=2<\/script>',
+    '</div><svg onload="window.__XSS__=3"></svg>',
+    '<a href="javascript:window.__XSS__=4">点我</a>',
+    '<iframe src="javascript:window.__XSS__=5"></iframe>',
+    '【答案】**这是加粗的答案** 与 `行内代码`',
+    '正常的一行文字用来确认渲染仍然工作'
+  ].join('\n');
+
+  window.__AIQA_DEMO__ = {
+    name: 'demo',
+    getSettings: function () {
+      return Promise.resolve({ model: 'demo', hasApiKey: true, apiKeyTail: 'demo' });
+    },
+    extract: function () {
+      return Promise.resolve({ ok: true, snapshot: window.AIQAExtract.snapshot(), frameId: 0 });
+    },
+    capture: function () { return Promise.resolve({ ok: false }); },
+    openOptions: function () {}, startPick: function () {}, stopPick: function () {}, relayPick: function () {},
+    ask: function (payload, h) {
+      if (h.onStart) h.onStart({ model: 'demo' });
+      setTimeout(function () {
+        h.onDelta(PAYLOAD);
+        h.onDone({ text: PAYLOAD, elapsed: 12, model: 'demo' });
+      }, 20);
+      return { abort: function () {} };
+    }
+  };
+</script>
+<script src="../lib/extract.js"></script>
+<script src="../content/content.js"></script>
+<script>
+  const log = (t) => {
+    const el = document.getElementById('log');
+    el.textContent = (el.textContent === 'running…' ? '' : el.textContent + '\n') + t;
+  };
+
+  setTimeout(function () {
+    const host = document.getElementById('aiqa-shadow-host');
+    if (!host || !host.shadowRoot) { log('FAIL: 面板未注入'); document.title = 'XSS-ERROR'; return; }
+    const sr = host.shadowRoot;
+    sr.querySelector('.fab').click();
+
+    setTimeout(function () {
+      sr.querySelector('[data-act="ask"]').click();
+      setTimeout(check, 500);
+    }, 350);
+  }, 100);
+
+  function check() {
+    const sr = document.getElementById('aiqa-shadow-host').shadowRoot;
+    const answer = sr.querySelector('[data-role="answer"]');
+    const danger = answer.querySelector('img, script, svg, iframe, object, embed');
+    const jsLink = Array.from(answer.querySelectorAll('a')).filter((a) => /^javascript:/i.test(a.getAttribute('href') || ''));
+
+    log('注入元素: ' + (danger ? danger.tagName : '无'));
+    log('javascript: 链接: ' + jsLink.length);
+    log('window.__XSS__: ' + (window.__XSS__ === undefined ? '未触发' : String(window.__XSS__)));
+    log('文本中是否含字面量 <img: ' + answer.textContent.includes('<img'));
+    log('加粗是否仍渲染: ' + (answer.querySelector('strong') ? '是' : '否'));
+    log('回答区纯文本片段: ' + JSON.stringify(answer.textContent.slice(0, 60)));
+
+    const safe = !danger && jsLink.length === 0 && window.__XSS__ === undefined && answer.textContent.includes('<img');
+    log('');
+    log(safe ? 'RESULT SAFE' : 'RESULT VULNERABLE');
+    document.title = safe ? 'XSS-SAFE' : 'XSS-VULNERABLE';
+  }
+</script>
+</body>
+</html>

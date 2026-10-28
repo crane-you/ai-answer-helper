@@ -707,6 +707,14 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
   }
 
   function startAsk(payload) {
+    // 限流：防止误触或页面脚本合成点击疯狂刷接口、烧掉额度
+    const now = Date.now();
+    if (now - state.lastAskAt < 1500) {
+      toast('刚发过请求，请稍等一下');
+      return;
+    }
+    state.lastAskAt = now;
+
     state.answer = '';
     state.reason = '';
     state.lastElapsed = 0;
@@ -1026,6 +1034,14 @@ textarea.qedit:focus { border-color: #9db4ff; box-shadow: 0 0 0 3px rgba(79,124,
       const btn = e.target.closest ? e.target.closest('[data-act]') : null;
       if (!btn) return;
       const act = btn.getAttribute('data-act');
+
+      // 「开始作答」和「截图问 AI」会调用付费接口，只认真实用户操作。
+      // 页面脚本用 element.click() 合成的事件 isTrusted === false，直接忽略，
+      // 避免恶意页面刷请求消耗额度。
+      if (!DEMO && !e.isTrusted && (act === 'ask' || act === 'shot')) {
+        return;
+      }
+
       if (act === 'close') closePanel();
       else if (act === 'options') openOptions();
       else if (act === 'ask') askCurrent();

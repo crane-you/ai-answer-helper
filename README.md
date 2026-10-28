@@ -79,6 +79,7 @@
 - API Key 只保存在本机 `chrome.storage.local`，不会上传到除你填写的接口地址以外的任何地方。
 - 题目文本只发送到你在设置里配置的那个接口。
 - 没有统计上报、没有账号体系、不收集浏览历史。
+- 完整说明（包括权限用途与残余风险）见 [PRIVACY.md](PRIVACY.md)。
 
 ## 常见问题
 
@@ -119,8 +120,9 @@ ai-qa-extension/
 ├─ popup/                 # 工具栏弹窗
 ├─ options/               # 设置页
 ├─ assets/                # 图标
+├─ docs/                  # 截图与 CI 配置
 ├─ demo/preview.html      # 界面预览（不连网络，模拟流式回答）
-├─ test/                  # 自测页面与产物
+├─ test/                  # 自测页面：识别 / XSS / 端到端
 └─ tools/                 # 图标生成、自测脚本
 ```
 
@@ -132,6 +134,9 @@ bash tools/run-browser-tests.sh      # 无头浏览器跑 11 项识别断言 + �
 
 # 后台逻辑自测（Node，自带假 OpenAI 服务）
 node test/background-test.mjs
+
+# 回答渲染的 XSS 防护测试（浏览器打开，标题出现 XSS-SAFE 即通过）
+# test/xss-test.html
 
 # 端到端：真实加载扩展，验证注入 / 跨 frame 取题 / 面板联动
 bash tools/run-e2e.sh
